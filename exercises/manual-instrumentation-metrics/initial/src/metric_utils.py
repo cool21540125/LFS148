@@ -37,12 +37,12 @@ def create_meter(name: str, version: str) -> metric_api.Meter:
 
 
 def create_request_instruments(meter: metric_api.Meter) -> dict[str, metric_api.Instrument]:
-    index_counter = meter.create_counter(
-        name="index_called",
+    traffic_volume = meter.create_counter(
+        name="traffic_volume",
         unit="request",
-        description="Total amount of requests to '/'"
+        description="total volume of requests to an endpoint",
     )
     instruments = {
-        "index_counter": index_counter
+        "traffic_volume": traffic_volume,
     }
     return instruments

@@ -33,13 +33,16 @@ def do_stuff():
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    request_instruments["index_counter"].add(
-        1,
-        { "http.request.method": request.method}
-    )
     do_stuff()
     current_time = time.strftime("%a, %d %b %Y %H:%M:%S", time.gmtime())
     return f"Hello, World! It's currently {current_time}"
+
+
+@app.before_request
+def before_request_func():
+    request_instruments["traffic_volume"].add(
+        1, attributes={"http.route": request.path}
+    )
 
 
 if __name__ == "__main__":
