@@ -1,4 +1,6 @@
 # OTel SDK
+from typing import Generator, Any
+
 from opentelemetry.sdk.metrics.export import (
     ConsoleMetricExporter,
     PeriodicExportingMetricReader,
@@ -56,5 +58,27 @@ def create_request_instruments(meter: metric_api.Meter) -> dict[str, metric_api.
         "traffic_volume": traffic_volume,
         "error_rate": error_rate,
         "request_latency": request_latency,
+    }
+    return instruments
+
+
+import psutil
+
+
+# callbacks for asynchronous instruments
+def get_cpu_utilization(opt: metric_api.CallbackOptions) -> Generator[metric_api.Observation, Any, None]:
+    cpu_util = psutil.cpu_percent(interval=None) / 100
+    yield metric_api.Observation(cpu_util)
+
+
+def create_resource_instruments(meter: metric_api.Meter) -> dict[str, metric_api.Instrument]:
+    cpu_util_gauge = meter.create_observable_gauge(
+        name="process.cpu.utilization",
+        callbacks=[get_cpu_utilization],
+        unit="1",
+        description="CPU utilization since last call",
+    )
+    instruments = {
+        "cpu_utilization": cpu_util_gauge
     }
     return instruments

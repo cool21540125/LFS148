@@ -1,12 +1,12 @@
 # pyright: reportMissingTypeStubs=false, reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnknownMemberType=false, reportAttributeAccessIssue=false
-
+import logging
 import time
 
 import requests
 from client import ChaosClient, FakerClient
 from flask import Flask, make_response, request, Response
 
-from metric_utils import create_meter, create_request_instruments
+from metric_utils import create_meter, create_request_instruments, create_resource_instruments
 
 
 # global variables
@@ -71,6 +71,13 @@ def index():
 
 
 if __name__ == "__main__":
+    # disable logs of builtin webserver for load test
+    logging.getLogger("werkzeug").disabled = True
+
+    # instrumentation
     request_instruments = create_request_instruments(meter)
+    create_resource_instruments(meter)
+
+    # launch app
     db = ChaosClient(client=FakerClient())
     app.run(host="0.0.0.0", debug=True)
