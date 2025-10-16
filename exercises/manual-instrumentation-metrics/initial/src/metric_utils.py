@@ -7,6 +7,49 @@ from opentelemetry.sdk.metrics.export import (
     MetricReader
 )
 
+from opentelemetry.sdk.metrics.view import (
+    View,
+    DropAggregation,
+    ExplicitBucketHistogramAggregation,
+)
+
+
+def create_views() -> list[View]:
+    views = []
+
+    # change name of instrument
+    histogram_explicit_buckets = View(
+        instrument_type=Histogram,
+        instrument_name="*", # wildcard pattern matching
+        aggregation=ExplicitBucketHistogramAggregation((.005, .01, .025, .05, .1, .25, .5, .75, 1, 2.5, 5, 7.5, 10)),  # define bucket
+    )
+    views.append(histogram_explicit_buckets)
+
+    # change what attributes to report
+    traffic_volume_drop_attributes = View(
+        instrument_type=Counter,
+        instrument_name="traffic_volume",
+        attribute_keys={} or None,  # <-- drop all attributes
+    )
+    views.append(traffic_volume_drop_attributes)
+
+    traffic_volume_change_name = View(
+        instrument_type=Counter,
+        instrument_name="traffic_volume",
+        name="test",  # <-- change name
+    )
+    views.append(traffic_volume_change_name)
+
+    # drop entire instrument
+    drop_instrument = View(
+        instrument_type=ObservableGauge,
+        instrument_name="process.cpu.utilization",
+        aggregation=DropAggregation(),  # <-- drop measurements
+    )
+    views.append(drop_instrument)
+
+    return views
+
 
 def create_metrics_pipeline(export_interval: int) -> MetricReader:
     console_exporter = ConsoleMetricExporter()
@@ -26,10 +69,13 @@ from opentelemetry.sdk.metrics import MeterProvider
 
 
 def create_meter(name: str, version: str) -> metric_api.Meter:
+    views = create_views()
+
     # configure provider
     metric_reader = create_metrics_pipeline(5000)
     provider = MeterProvider(
-        metric_readers=[metric_reader]
+        metric_readers=[metric_reader],
+        views=views,
     )
 
     # obtain meter
