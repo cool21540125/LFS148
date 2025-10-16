@@ -29,6 +29,7 @@ def before_request_func():
     request_instruments["traffic_volume"].add(
         1, attributes={"http.route": request.path}
     )
+    request.environ["request_start"] = time.time_ns()
 
 
 @app.after_request
@@ -39,6 +40,19 @@ def after_request_func(response: Response) -> Response:
             "state": "success" if response.status_code < 400 else "fail",
         }
     )
+
+    # ------------ Latency ------------
+    request_end = time.time_ns()
+    duration = (request_end - request.environ["request_start"]) / 1_000_000_000 # convert ns to s
+    request_instruments["request_latency"].record(
+        duration,
+        attributes = {
+            "http.request.method": request.method,
+            "http.route": request.path,
+            "http.response.status_code": response.status_code,
+        }
+    )
+
     return response
 
 
